@@ -7,10 +7,13 @@ find_package(CUDA 6.0 REQUIRED ) # For Cuda Managed Memory and c++11
 include_directories(${OpenCV_INCLUDE_DIRS})
 include_directories(.)
 
-set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-O3 --use_fast_math --ptxas-options=-v -std=c++11 --compiler-options -Wall -gencode arch=compute_60,code=sm_60 -gencode arch=compute_60,code=sm_60)
+set(CPP_VERSION 17)
+set(CUDA_SM 89)
+
+set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-O3 --use_fast_math --ptxas-options=-v -std=c++${CPP_VERSION} --compiler-options -Wall -gencode arch=compute_${CUDA_SM},code=sm_${CUDA_SM} -gencode arch=compute_${CUDA_SM},code=sm_${CUDA_SM})
 
 if(CMAKE_COMPILER_IS_GNUCXX)
-    add_definitions(-std=c++11)
+    add_definitions(-std=c++${CPP_VERSION})
     add_definitions(-Wall)
     add_definitions(-Wextra)
     add_definitions(-pedantic)

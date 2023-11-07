@@ -1,0 +1,7 @@
+# compiled
+__pycache__
+build
+
+# output
+output
+logs

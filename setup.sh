@@ -1,8 +1,8 @@
 cd ..
 git clone https://github.com/ewrfcas/MVSFormer.git
-git clone https://github.com/YoYo000/fusibile.git
 
-cd mvs-fusion/mvs_fusion/Lib/fusibile
+cd mvs-former/mvs_former/Lib/fusibile
+rm -rf build
 mkdir build
 cd build
 cmake ..
