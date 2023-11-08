@@ -4,7 +4,7 @@ import torch
 import torchvision.transforms.functional as F
 
 
-class ColorJitter(torch.nn.Module):
+class ColorJittor(torch.nn.Module):
     """Randomly change the brightness, contrast and saturation of an image.
 
     Args:
@@ -24,17 +24,22 @@ class ColorJitter(torch.nn.Module):
 
     def __init__(self, brightness=0, contrast=0, saturation=0, hue=0):
         super().__init__()
-        self.brightness = self._check_input(brightness, 'brightness')
-        self.contrast = self._check_input(contrast, 'contrast')
-        self.saturation = self._check_input(saturation, 'saturation')
-        self.hue = self._check_input(hue, 'hue', center=0, bound=(-0.5, 0.5),
-                                     clip_first_on_zero=False)
+        self.brightness = self._check_input(brightness, "brightness")
+        self.contrast = self._check_input(contrast, "contrast")
+        self.saturation = self._check_input(saturation, "saturation")
+        self.hue = self._check_input(
+            hue, "hue", center=0, bound=(-0.5, 0.5), clip_first_on_zero=False
+        )
 
     @torch.jit.unused
-    def _check_input(self, value, name, center=1, bound=(0, float('inf')), clip_first_on_zero=True):
+    def _check_input(
+        self, value, name, center=1, bound=(0, float("inf")), clip_first_on_zero=True
+    ):
         if isinstance(value, numbers.Number):
             if value < 0:
-                raise ValueError("If {} is a single number, it must be non negative.".format(name))
+                raise ValueError(
+                    "If {} is a single number, it must be non negative.".format(name)
+                )
             value = [center - float(value), center + float(value)]
             if clip_first_on_zero:
                 value[0] = max(value[0], 0.0)
@@ -42,7 +47,11 @@ class ColorJitter(torch.nn.Module):
             if not bound[0] <= value[0] <= value[1] <= bound[1]:
                 raise ValueError("{} values should be between {}".format(name, bound))
         else:
-            raise TypeError("{} should be a single number or a list/tuple with lenght 2.".format(name))
+            raise TypeError(
+                "{} should be a single number or a list/tuple with lenght 2.".format(
+                    name
+                )
+            )
 
         # if value is 0 or (1., 1.) for brightness/contrast/saturation
         # or (0., 0.) for hue, do nothing
@@ -50,7 +59,15 @@ class ColorJitter(torch.nn.Module):
             value = None
         return value
 
-    def forward(self, img, fn_idx, brightness_factor, contrast_factor, saturation_factor, hue_factor):
+    def forward(
+        self,
+        img,
+        fn_idx,
+        brightness_factor,
+        contrast_factor,
+        saturation_factor,
+        hue_factor,
+    ):
         """
         Args:
             img (PIL Image or Tensor): Input image.
@@ -83,9 +100,9 @@ class ColorJitter(torch.nn.Module):
         return img
 
     def __repr__(self):
-        format_string = self.__class__.__name__ + '('
-        format_string += 'brightness={0}'.format(self.brightness)
-        format_string += ', contrast={0}'.format(self.contrast)
-        format_string += ', saturation={0}'.format(self.saturation)
-        format_string += ', hue={0})'.format(self.hue)
+        format_string = self.__class__.__name__ + "("
+        format_string += "brightness={0}".format(self.brightness)
+        format_string += ", contrast={0}".format(self.contrast)
+        format_string += ", saturation={0}".format(self.saturation)
+        format_string += ", hue={0})".format(self.hue)
         return format_string

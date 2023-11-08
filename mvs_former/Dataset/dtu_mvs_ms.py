@@ -8,14 +8,14 @@ from PIL import Image
 from torch.utils.data import Dataset
 from torchvision import transforms
 
-from datasets.data_io import read_pfm
-from .color_jittor import ColorJitter
+from mvs_former.Method.data_io import read_pfm
+from mvs_former.Module.color_jittor import ColorJittor
 
 np.random.seed(123)
 random.seed(123)
 
 
-class RandomGamma():
+class RandomGamma:
     def __init__(self, min_gamma=0.7, max_gamma=1.5, clip_image=False):
         self._min_gamma = min_gamma
         self._max_gamma = max_gamma
@@ -38,9 +38,23 @@ class RandomGamma():
 
 
 # the DTU dataset preprocessed by Yao Yao (only for training)
-class DTUMVSDataset(Dataset):
-    def __init__(self, datapath, listfile, mode, nviews, ndepths=192, interval_scale=1.06, crop=False, augment=False,
-                 aug_args=None, height=256, width=320, patch_size=16, **kwargs):
+class DTUMVSMSDataset(Dataset):
+    def __init__(
+        self,
+        datapath,
+        listfile,
+        mode,
+        nviews,
+        ndepths=192,
+        interval_scale=1.06,
+        crop=False,
+        augment=False,
+        aug_args=None,
+        height=256,
+        width=320,
+        patch_size=16,
+        **kwargs,
+    ):
         super(DTUMVSDataset, self).__init__()
         self.datapath = datapath
         self.listfile = listfile
@@ -52,7 +66,7 @@ class DTUMVSDataset(Dataset):
         self.ndepths = ndepths
         self.interval_scale = interval_scale
 
-        if mode != 'train':
+        if mode != "train":
             self.crop = False
             self.augment = False
             self.random_mask = False
@@ -60,29 +74,41 @@ class DTUMVSDataset(Dataset):
             self.crop = crop
             self.augment = augment
         self.kwargs = kwargs
-        self.multi_scale = kwargs.get('multi_scale', False)
-        self.multi_scale_args = kwargs['multi_scale_args']
-        self.resize_scale = kwargs.get('resize_scale', 0.5)
-        self.scales = self.multi_scale_args['scales'][::-1]
-        self.resize_range = self.multi_scale_args['resize_range']
-        self.consist_crop = kwargs.get('consist_crop', False)
-        self.batch_size = kwargs.get('batch_size', 4)
-        self.world_size = kwargs.get('world_size', 1)
+        self.multi_scale = kwargs.get("multi_scale", False)
+        self.multi_scale_args = kwargs["multi_scale_args"]
+        self.resize_scale = kwargs.get("resize_scale", 0.5)
+        self.scales = self.multi_scale_args["scales"][::-1]
+        self.resize_range = self.multi_scale_args["resize_range"]
+        self.consist_crop = kwargs.get("consist_crop", False)
+        self.batch_size = kwargs.get("batch_size", 4)
+        self.world_size = kwargs.get("world_size", 1)
         self.img_size_map = []
 
         # print("mvsdataset kwargs", self.kwargs)
 
-        if self.augment and mode == 'train':
-            self.color_jittor = ColorJitter(brightness=aug_args['brightness'], contrast=aug_args['contrast'],
-                                            saturation=aug_args['saturation'], hue=aug_args['hue'])
+        if self.augment and mode == "train":
+            self.color_jittor = ColorJittor(
+                brightness=aug_args["brightness"],
+                contrast=aug_args["contrast"],
+                saturation=aug_args["saturation"],
+                hue=aug_args["hue"],
+            )
             self.to_tensor = transforms.ToTensor()
-            self.random_gamma = RandomGamma(min_gamma=aug_args['min_gamma'], max_gamma=aug_args['max_gamma'], clip_image=True)
-            self.normalize = transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
+            self.random_gamma = RandomGamma(
+                min_gamma=aug_args["min_gamma"],
+                max_gamma=aug_args["max_gamma"],
+                clip_image=True,
+            )
+            self.normalize = transforms.Normalize(
+                (0.485, 0.456, 0.406), (0.229, 0.224, 0.225)
+            )
 
-        self.transforms = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
-        ])
+        self.transforms = transforms.Compose(
+            [
+                transforms.ToTensor(),
+                transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
+            ]
+        )
 
         assert self.mode in ["train", "val", "test"]
         self.metas = self.build_list()
@@ -127,7 +153,7 @@ class DTUMVSDataset(Dataset):
                 barrel_idx += 1
 
         # random img size:256~512
-        if self.mode == 'train':
+        if self.mode == "train":
             barrel_num = int(len(self.metas) / (self.batch_size * self.world_size))
             barrel_num += 2
             self.img_size_map = np.arange(0, len(self.scales))
@@ -141,16 +167,20 @@ class DTUMVSDataset(Dataset):
             lines = f.readlines()
             lines = [line.rstrip() for line in lines]
         # extrinsics: line [1,5), 4x4 matrix
-        extrinsics = np.fromstring(' '.join(lines[1:5]), dtype=np.float32, sep=' ').reshape((4, 4))
+        extrinsics = np.fromstring(
+            " ".join(lines[1:5]), dtype=np.float32, sep=" "
+        ).reshape((4, 4))
         # intrinsics: line [7-10), 3x3 matrix
-        intrinsics = np.fromstring(' '.join(lines[7:10]), dtype=np.float32, sep=' ').reshape((3, 3))
+        intrinsics = np.fromstring(
+            " ".join(lines[7:10]), dtype=np.float32, sep=" "
+        ).reshape((3, 3))
         # depth_min & depth_interval: line 11
         depth_min = float(lines[11].split()[0])
         depth_interval = float(lines[11].split()[1]) * self.interval_scale
         return intrinsics, extrinsics, depth_min, depth_interval
 
     def read_img(self, filename):
-        img = Image.open(filename).convert('RGB')
+        img = Image.open(filename).convert("RGB")
         return img
 
     def read_depth(self, filename):
@@ -173,10 +203,16 @@ class DTUMVSDataset(Dataset):
     def generate_stage_depth(self, depth):
         h, w = depth.shape
         depth_ms = {
-            "stage1": cv2.resize(depth, (w // 8, h // 8), interpolation=cv2.INTER_NEAREST),
-            "stage2": cv2.resize(depth, (w // 4, h // 4), interpolation=cv2.INTER_NEAREST),
-            "stage3": cv2.resize(depth, (w // 2, h // 2), interpolation=cv2.INTER_NEAREST),
-            "stage4": depth
+            "stage1": cv2.resize(
+                depth, (w // 8, h // 8), interpolation=cv2.INTER_NEAREST
+            ),
+            "stage2": cv2.resize(
+                depth, (w // 4, h // 4), interpolation=cv2.INTER_NEAREST
+            ),
+            "stage3": cv2.resize(
+                depth, (w // 2, h // 2), interpolation=cv2.INTER_NEAREST
+            ),
+            "stage4": depth,
         }
         return depth_ms
 
@@ -204,7 +240,11 @@ class DTUMVSDataset(Dataset):
 
     def pre_resize(self, img, depth, intrinsic, mask, resize_scale):
         ori_h, ori_w, _ = img.shape
-        img = cv2.resize(img, (int(ori_w * resize_scale), int(ori_h * resize_scale)), interpolation=cv2.INTER_AREA)
+        img = cv2.resize(
+            img,
+            (int(ori_w * resize_scale), int(ori_h * resize_scale)),
+            interpolation=cv2.INTER_AREA,
+        )
         h, w, _ = img.shape
 
         output_intrinsics = intrinsic.copy()
@@ -212,14 +252,24 @@ class DTUMVSDataset(Dataset):
         output_intrinsics[1, :] *= resize_scale
 
         if depth is not None:
-            depth = cv2.resize(depth, (int(ori_w * resize_scale), int(ori_h * resize_scale)), interpolation=cv2.INTER_NEAREST)
+            depth = cv2.resize(
+                depth,
+                (int(ori_w * resize_scale), int(ori_h * resize_scale)),
+                interpolation=cv2.INTER_NEAREST,
+            )
 
         if mask is not None:
-            mask = cv2.resize(mask, (int(ori_w * resize_scale), int(ori_h * resize_scale)), interpolation=cv2.INTER_NEAREST)
+            mask = cv2.resize(
+                mask,
+                (int(ori_w * resize_scale), int(ori_h * resize_scale)),
+                interpolation=cv2.INTER_NEAREST,
+            )
 
         return img, depth, output_intrinsics, mask
 
-    def final_crop(self, img, depth, intrinsic, mask, crop_h, crop_w, offset_y=None, offset_x=None):
+    def final_crop(
+        self, img, depth, intrinsic, mask, crop_h, crop_w, offset_y=None, offset_x=None
+    ):
         h, w, _ = img.shape
         if offset_x is None or offset_y is None:
             if self.crop:
@@ -228,23 +278,36 @@ class DTUMVSDataset(Dataset):
             else:
                 offset_y = (h - crop_h) // 2
                 offset_x = (w - crop_w) // 2
-        cropped_image = img[offset_y:offset_y + crop_h, offset_x:offset_x + crop_w, :]
+        cropped_image = img[
+            offset_y : offset_y + crop_h, offset_x : offset_x + crop_w, :
+        ]
 
         output_intrinsics = intrinsic.copy()
         output_intrinsics[0, 2] -= offset_x
         output_intrinsics[1, 2] -= offset_y
 
         if depth is not None:
-            cropped_depth = depth[offset_y:offset_y + crop_h, offset_x:offset_x + crop_w]
+            cropped_depth = depth[
+                offset_y : offset_y + crop_h, offset_x : offset_x + crop_w
+            ]
         else:
             cropped_depth = None
 
         if mask is not None:
-            cropped_mask = mask[offset_y:offset_y + crop_h, offset_x:offset_x + crop_w]
+            cropped_mask = mask[
+                offset_y : offset_y + crop_h, offset_x : offset_x + crop_w
+            ]
         else:
             cropped_mask = None
 
-        return cropped_image, cropped_depth, output_intrinsics, cropped_mask, offset_y, offset_x
+        return (
+            cropped_image,
+            cropped_depth,
+            output_intrinsics,
+            cropped_mask,
+            offset_y,
+            offset_x,
+        )
 
     def __getitem__(self, idx):
         cv2.ocl.setUseOpenCL(False)
@@ -252,9 +315,9 @@ class DTUMVSDataset(Dataset):
 
         meta = self.metas[idx]
         scan, light_idx, ref_view, src_views = meta
-        if self.mode == 'train':
+        if self.mode == "train":
             np.random.shuffle(src_views)
-        view_ids = [ref_view] + src_views[:(self.nviews - 1)]
+        view_ids = [ref_view] + src_views[: (self.nviews - 1)]
         # view_ids = [ref_view] + src_views
 
         imgs = []
@@ -266,24 +329,66 @@ class DTUMVSDataset(Dataset):
         offset_x = None
         if self.augment:
             fn_idx = torch.randperm(4)
-            brightness_factor = torch.tensor(1.0).uniform_(self.color_jittor.brightness[0], self.color_jittor.brightness[1]).item()
-            contrast_factor = torch.tensor(1.0).uniform_(self.color_jittor.contrast[0], self.color_jittor.contrast[1]).item()
-            saturation_factor = torch.tensor(1.0).uniform_(self.color_jittor.saturation[0], self.color_jittor.saturation[1]).item()
-            hue_factor = torch.tensor(1.0).uniform_(self.color_jittor.hue[0], self.color_jittor.hue[1]).item()
-            gamma_factor = self.random_gamma.get_params(self.random_gamma._min_gamma, self.random_gamma._max_gamma)
+            brightness_factor = (
+                torch.tensor(1.0)
+                .uniform_(
+                    self.color_jittor.brightness[0], self.color_jittor.brightness[1]
+                )
+                .item()
+            )
+            contrast_factor = (
+                torch.tensor(1.0)
+                .uniform_(self.color_jittor.contrast[0], self.color_jittor.contrast[1])
+                .item()
+            )
+            saturation_factor = (
+                torch.tensor(1.0)
+                .uniform_(
+                    self.color_jittor.saturation[0], self.color_jittor.saturation[1]
+                )
+                .item()
+            )
+            hue_factor = (
+                torch.tensor(1.0)
+                .uniform_(self.color_jittor.hue[0], self.color_jittor.hue[1])
+                .item()
+            )
+            gamma_factor = self.random_gamma.get_params(
+                self.random_gamma._min_gamma, self.random_gamma._max_gamma
+            )
         else:
-            fn_idx, brightness_factor, contrast_factor, saturation_factor, hue_factor, gamma_factor = None, None, None, None, None, None
+            (
+                fn_idx,
+                brightness_factor,
+                contrast_factor,
+                saturation_factor,
+                hue_factor,
+                gamma_factor,
+            ) = None, None, None, None, None, None
 
         for i, vid in enumerate(view_ids):
             # NOTE that the id in image file names is from 1 to 49 (not 0~48)
             # NOTE that DTU_origin/Rectified saves the images with the original size (1200x1600)
-            img_filename = os.path.join(self.datapath, 'DTU_origin/Rectified/{}/rect_{:0>3}_{}_r5000.png'.format(scan, vid + 1, light_idx))
-            mask_filename_hr = os.path.join(self.datapath, 'Depths_raw/{}/depth_visual_{:0>4}.png'.format(scan, vid))
-            depth_filename_hr = os.path.join(self.datapath, 'Depths_raw/{}/depth_map_{:0>4}.pfm'.format(scan, vid))
+            img_filename = os.path.join(
+                self.datapath,
+                "DTU_origin/Rectified/{}/rect_{:0>3}_{}_r5000.png".format(
+                    scan, vid + 1, light_idx
+                ),
+            )
+            mask_filename_hr = os.path.join(
+                self.datapath, "Depths_raw/{}/depth_visual_{:0>4}.png".format(scan, vid)
+            )
+            depth_filename_hr = os.path.join(
+                self.datapath, "Depths_raw/{}/depth_map_{:0>4}.pfm".format(scan, vid)
+            )
             # these poses are based on original resolution
-            proj_mat_filename = os.path.join(self.datapath, 'Cameras/{:0>8}_cam.txt').format(vid)
+            proj_mat_filename = os.path.join(
+                self.datapath, "Cameras/{:0>8}_cam.txt"
+            ).format(vid)
             img = self.read_img(img_filename)
-            intrinsics, extrinsics, depth_min, depth_interval = self.read_cam_file(proj_mat_filename)
+            intrinsics, extrinsics, depth_min, depth_interval = self.read_cam_file(
+                proj_mat_filename
+            )
 
             if i == 0:
                 depth_hr = self.read_depth_hr(depth_filename_hr)
@@ -293,9 +398,11 @@ class DTUMVSDataset(Dataset):
                 depth_mask_hr = None
 
             # resize according to crop size
-            if self.mode == 'train':
+            if self.mode == "train":
                 [crop_h, crop_w] = self.scales[self.idx_map[idx] % len(self.scales)]
-                enlarge_scale = self.resize_range[0] + random.random() * (self.resize_range[1] - self.resize_range[0])
+                enlarge_scale = self.resize_range[0] + random.random() * (
+                    self.resize_range[1] - self.resize_range[0]
+                )
                 resize_scale_h = np.clip((crop_h * enlarge_scale) / 1200, 0.45, 1.0)
                 resize_scale_w = np.clip((crop_w * enlarge_scale) / 1600, 0.45, 1.0)
                 resize_scale = max(resize_scale_h, resize_scale_w)
@@ -305,15 +412,30 @@ class DTUMVSDataset(Dataset):
 
             img = np.asarray(img)
             if resize_scale != 1.0:
-                img, depth_hr, intrinsics, depth_mask_hr = self.pre_resize(img, depth_hr, intrinsics, depth_mask_hr, resize_scale)
+                img, depth_hr, intrinsics, depth_mask_hr = self.pre_resize(
+                    img, depth_hr, intrinsics, depth_mask_hr, resize_scale
+                )
 
             if i == 0:  # reference view
                 while True:  # get resonable offset
                     # finally random crop
-                    img_, depth_hr_, intrinsics_, depth_mask_hr_, offset_y, offset_x = self.final_crop(img, depth_hr, intrinsics, depth_mask_hr,
-                                                                                                       crop_h=crop_h, crop_w=crop_w)
+                    (
+                        img_,
+                        depth_hr_,
+                        intrinsics_,
+                        depth_mask_hr_,
+                        offset_y,
+                        offset_x,
+                    ) = self.final_crop(
+                        img,
+                        depth_hr,
+                        intrinsics,
+                        depth_mask_hr,
+                        crop_h=crop_h,
+                        crop_w=crop_w,
+                    )
                     mask_read_ms_ = self.generate_stage_depth(depth_mask_hr_)
-                    if self.mode != 'train' or np.any(mask_read_ms_['stage1'] > 0.0):
+                    if self.mode != "train" or np.any(mask_read_ms_["stage1"] > 0.0):
                         break
 
                 depth_ms = self.generate_stage_depth(depth_hr_)
@@ -322,15 +444,30 @@ class DTUMVSDataset(Dataset):
                 intrinsics = intrinsics_
                 # get depth values
                 depth_max = depth_interval * self.ndepths + depth_min
-                depth_values = np.arange(depth_min, depth_max, depth_interval, dtype=np.float32)
+                depth_values = np.arange(
+                    depth_min, depth_max, depth_interval, dtype=np.float32
+                )
             else:
                 if self.consist_crop:
-                    img, depth_hr, intrinsics, depth_mask_hr, _, _ = self.final_crop(img, depth_hr, intrinsics, depth_mask_hr,
-                                                                                     crop_h=crop_h, crop_w=crop_w,
-                                                                                     offset_y=offset_y, offset_x=offset_x)
+                    img, depth_hr, intrinsics, depth_mask_hr, _, _ = self.final_crop(
+                        img,
+                        depth_hr,
+                        intrinsics,
+                        depth_mask_hr,
+                        crop_h=crop_h,
+                        crop_w=crop_w,
+                        offset_y=offset_y,
+                        offset_x=offset_x,
+                    )
                 else:
-                    img, depth_hr, intrinsics, depth_mask_hr, _, _ = self.final_crop(img, depth_hr, intrinsics, depth_mask_hr,
-                                                                                     crop_h=crop_h, crop_w=crop_w)
+                    img, depth_hr, intrinsics, depth_mask_hr, _, _ = self.final_crop(
+                        img,
+                        depth_hr,
+                        intrinsics,
+                        depth_mask_hr,
+                        crop_h=crop_h,
+                        crop_w=crop_w,
+                    )
 
             proj_mat = np.zeros(shape=(2, 4, 4), dtype=np.float32)  #
             proj_mat[0, :4, :4] = extrinsics
@@ -342,7 +479,14 @@ class DTUMVSDataset(Dataset):
             if not self.augment:
                 imgs.append(self.transforms(img))
             else:
-                img_aug = self.color_jittor(img, fn_idx, brightness_factor, contrast_factor, saturation_factor, hue_factor)
+                img_aug = self.color_jittor(
+                    img,
+                    fn_idx,
+                    brightness_factor,
+                    contrast_factor,
+                    saturation_factor,
+                    hue_factor,
+                )
                 img_aug = self.to_tensor(img_aug)
                 img_aug = self.random_gamma(img_aug, gamma_factor)
                 img_aug = self.normalize(img_aug)
@@ -363,12 +507,14 @@ class DTUMVSDataset(Dataset):
             "stage1": stage0_pjmats,  # 1/8
             "stage2": stage1_pjmats,  # 1/4
             "stage3": stage2_pjmats,  # 1/2
-            "stage4": proj_matrices  # 1/1
+            "stage4": proj_matrices,  # 1/1
         }
 
-        return {"imgs": imgs,
-                "proj_matrices": proj_matrices_ms,
-                "depth": depth_ms,
-                "depth_values": depth_values,
-                "filename": scan + '/{}/' + '{:0>8}'.format(view_ids[0]) + "{}",
-                "mask": mask}
+        return {
+            "imgs": imgs,
+            "proj_matrices": proj_matrices_ms,
+            "depth": depth_ms,
+            "depth_values": depth_values,
+            "filename": scan + "/{}/" + "{:0>8}".format(view_ids[0]) + "{}",
+            "mask": mask,
+        }
