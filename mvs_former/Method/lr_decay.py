@@ -10,7 +10,9 @@
 # --------------------------------------------------------
 
 
-def param_groups_lrd(model, vit_lr, weight_decay=0.05, no_weight_decay_list=[], layer_decay=.75):
+def param_groups_lrd(
+    model, vit_lr, weight_decay=0.05, no_weight_decay_list=[], layer_decay=0.75
+):
     """
     Parameter groups for layer-wise lr decay
     Following BEiT: https://github.com/microsoft/unilm/blob/master/beit/optim_factory.py#L58
@@ -29,7 +31,7 @@ def param_groups_lrd(model, vit_lr, weight_decay=0.05, no_weight_decay_list=[], 
         # no decay: all 1D parameters and model specific ones
         if p.ndim == 1 or n in no_weight_decay_list:
             g_decay = "no_decay"
-            this_decay = 0.
+            this_decay = 0.0
         else:
             g_decay = "decay"
             this_decay = weight_decay
@@ -39,7 +41,7 @@ def param_groups_lrd(model, vit_lr, weight_decay=0.05, no_weight_decay_list=[], 
 
         if group_name not in param_group_names:
             if layer_id == -1:
-                this_scale = 10.
+                this_scale = 10.0
             else:
                 this_scale = layer_scales[layer_id]
 
@@ -48,14 +50,14 @@ def param_groups_lrd(model, vit_lr, weight_decay=0.05, no_weight_decay_list=[], 
                 "lr_scale": this_scale,
                 "weight_decay": this_decay,
                 "params": [],
-                'vit_param': True
+                "vit_param": True,
             }
             param_groups[group_name] = {
                 "lr": vit_lr,
                 "lr_scale": this_scale,
                 "weight_decay": this_decay,
                 "params": [],
-                'vit_param': True
+                "vit_param": True,
             }
 
         param_group_names[group_name]["params"].append(n)
@@ -71,13 +73,13 @@ def get_layer_id_for_vit(name, num_layers):
     Assign a parameter with its layer id
     Following BEiT: https://github.com/microsoft/unilm/blob/master/beit/optim_factory.py#L33
     """
-    if name in ['cls_token', 'pos_embed']:
+    if name in ["cls_token", "pos_embed"]:
         return 0
-    elif name.startswith('patch_embed'):
+    elif name.startswith("patch_embed"):
         return 0
-    elif name.startswith('cross_blocks'):
+    elif name.startswith("cross_blocks"):
         return -1
-    elif name.startswith('blocks'):
-        return int(name.split('.')[1]) + 1
+    elif name.startswith("blocks"):
+        return int(name.split(".")[1]) + 1
     else:
         return num_layers
