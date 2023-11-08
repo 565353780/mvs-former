@@ -1,10 +1,8 @@
-cd ../MVSFormer
-
 CUDA_VISIBLE_DEVICES=0 python test.py \
 	--dataset dtu \
 	--batch_size 1 \
 	--testpath /home/chli/chLi/Dataset/MVSFormer/DTU/dtu_testing/dtu/ \
-	--testlist ../MVSFormer/lists/dtu/test.txt \
+	--testlist ../mvs-former/lists/dtu/test.txt \
 	--resume /home/chli/chLi/Model/MVSFormer/MVSFormer/MVSFormer/best.pth \
 	--outdir ../mvs-former/output/ \
 	--fusibile_exe_path ../mvs-former/mvs_former/Lib/fusibile/build/fusibile \

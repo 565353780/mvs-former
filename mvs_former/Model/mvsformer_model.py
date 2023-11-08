@@ -1,26 +1,33 @@
 import math
 import os
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
 
-import models.gvt as gvts
-import models.vision_transformer as vits
-from models.module import *
 from models.warping import homo_warping_3D_with_mask
 
+from mvs_former.Model.conv.conv_bn_relu import ConvBnReLU
+from mvs_former.Model.cost_reg import CostRegNet, CostRegNet2D, CostRegNet3D
+from mvs_former.Model.vit_decoder import (
+    VITDecoderStage4,
+    VITDecoderStage4NoAtt,
+    VITDecoderStage4Single,
+)
+from mvs_former.Model.twin_decoder import TwinDecoderStage4, TwinDecoderStage4V2
+from mvs_former.Model.fpn.encoder import FPNEncoder
+from mvs_former.Model.fpn.decoder import FPNDecoder, FPNDecoderV2
+from mvs_former.Model.gvt import alt_gvt_base, alt_gvt_small, alt_gvt_large
+from mvs_former.Model import vision_transformer as vits
+from mvs_former.Method.depth import (
+    depth_regression,
+    conf_regression,
+    init_range,
+    init_inverse_range,
+    schedule_range,
+    schedule_inverse_range,
+)
+
 Align_Corners_Range = False
-
-
-class identity_with(object):
-    def __init__(self, enabled=True):
-        self._enabled = enabled
-
-    def __enter__(self):
-        pass
-
-    def __exit__(self, *args):
-        pass
-
-
-autocast = torch.cuda.amp.autocast if torch.__version__ >= "1.6.0" else identity_with
 
 
 class StageNet(nn.Module):
@@ -72,7 +79,7 @@ class StageNet(nn.Module):
         volume_sum = 0.0
         vis_sum = 0.0
         similarities = []
-        with autocast(enabled=False):
+        with torch.cuda.amp.autocast(enabled=False):
             for src_feat, src_proj in zip(src_feats, src_projs):
                 # warpped features
                 src_feat = src_feat.to(torch.float32)
@@ -480,11 +487,11 @@ class TwinMVSNet(nn.Module):
         self.do_vit = True
         self.vit_args = args["vit_args"]
         if self.vit_args["vit_arch"] == "alt_gvt_small":
-            self.vit = gvts.alt_gvt_small()
+            self.vit = alt_gvt_small()
         elif self.vit_args["vit_arch"] == "alt_gvt_base":
-            self.vit = gvts.alt_gvt_base()
+            self.vit = alt_gvt_base()
         elif self.vit_args["vit_arch"] == "alt_gvt_large":
-            self.vit = gvts.alt_gvt_large()
+            self.vit = alt_gvt_large()
 
         if os.path.exists(self.vit_args["vit_path"]):
             state_dict = torch.load(self.vit_args["vit_path"], map_location="cpu")

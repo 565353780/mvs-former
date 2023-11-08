@@ -17,6 +17,8 @@ from datasets.data_io import read_pfm, save_pfm
 from misc.gipuma import gipuma_filter
 from utils import *
 
+from mvs_former.Model.mvsformer_model import TwinMVSNet, DINOMVSNet
+
 # cudnn.benchmark = True
 
 parser = argparse.ArgumentParser(description="Predict depth, filter, and fuse")
@@ -256,12 +258,8 @@ def save_depth(testlist, config):
     # model
     # build models architecture, then print to console
     if config["arch"]["args"]["vit_args"].get("twin", False):
-        from models.mvsformer_model import TwinMVSNet
-
         model = TwinMVSNet(config["arch"]["args"])
     else:
-        from models.mvsformer_model import DINOMVSNet
-
         model = DINOMVSNet(config["arch"]["args"])
 
     print("Loading checkpoint: {} ...".format(config.resume))
