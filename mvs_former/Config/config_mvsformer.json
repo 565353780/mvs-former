@@ -1,10 +1,10 @@
 {
-  "name": "MVSFormer-P",
+  "name": "MVSFormer",
   "n_gpu": 2,
   "fp16": true,
   "arch": {
     "args": {
-      "fix": true,
+      "fix": false,
       "depth_type": "ce",
       "mask_out_range": false,
       "focal": false,
@@ -32,16 +32,20 @@
         1.0
       ],
       "multi_scale": false,
-      "sr_ratio": 4,
       "vit_args": {
-        "twin": false,
+        "twin": true,
         "rescale": 0.5,
         "do_vit": true,
         "patch_size": 16,
         "qk_scale": "default",
-        "vit_arch": "vit_small",
+        "vit_arch": "alt_gvt_small",
         "vit_path": "/home/chli/chLi/Model/MVSFormer/alt_gvt_small/archive/data.pkl",
-        "vit_ch": 384,
+        "vit_ch": [
+          64,
+          128,
+          256,
+          512
+        ],
         "out_ch": 64,
         "att_fusion": true,
         "nhead": 6
@@ -54,8 +58,15 @@
       "args": {
         "data_set_type": "multi_scale",
         "datapath": "/home/DTU",
-        "train_data_list": "lists/dtu/train.txt",
-        "val_data_list": "lists/dtu/test.txt",
+        "train_data_list": "../mvs-former/mvs_former/Config/lists/dtu/train.txt",
+        "val_data_list": "../mvs-former/mvs_former/Config/lists/dtu/test.txt",
+        "random_mask": false,
+        "mask_path": "/home/wmlce/DTU_MVSNet/DTU_aug_masks/irregular_mask*",
+        "mask_rate": 0.25,
+        "mask_type_rates": [
+          0.25,
+          0.5
+        ],
         "mode": "train",
         "nviews": 5,
         "num_depths": 192,
@@ -174,9 +185,9 @@
             "704": 2,
             "768": 2,
             "832": 2,
-            "896": 2,
-            "960": 2,
-            "1024": 2
+            "896": 1,
+            "960": 1,
+            "1024": 1
           }
         },
         "interval_scale": 1.06,
@@ -203,7 +214,7 @@
   ],
   "optimizer": {
     "args": {
-      "vit_lr": 1.0e-5,
+      "vit_lr": 3.0e-5,
       "lr": 1.0e-3,
       "weight_decay": 0.01,
       "layer_decay": 0.75,

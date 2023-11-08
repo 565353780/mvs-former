@@ -60,8 +60,8 @@
       "args": {
         "data_set_type": "multi_scale",
         "datapath": "/home/BlendedMVS/BlendedMVS_raw",
-        "train_data_list": "lists/blended/training_list.txt",
-        "val_data_list": "lists/blended/validation_list.txt",
+        "train_data_list": "../mvs-former/mvs_former/Config/lists/blended/training_list.txt",
+        "val_data_list": "../mvs-former/mvs_former/Config/lists/blended/validation_list.txt",
         "mode": "train",
         "nviews": 5,
         "num_depths": 192,
