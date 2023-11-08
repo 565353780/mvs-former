@@ -1,12 +1,15 @@
 import logging
 import os
 from datetime import datetime
-from functools import reduce, partial
-from operator import getitem
+from functools import partial
 from pathlib import Path
 
-from logger import setup_logging
+from mvs_former.Method.logger import setup_logging
 from mvs_former.Method.utils import read_json, write_json
+from mvs_former.Method.config import (
+    update_config,
+    get_opt_name,
+)
 
 
 class ConfigParser:
@@ -20,7 +23,7 @@ class ConfigParser:
         :param run_id: Unique Identifier for training processes. Used to save checkpoints and training log. Timestamp is being used as default
         """
         # load config file and apply modification
-        self._config = _update_config(config, modification)
+        self._config = update_config(config, modification)
         self.resume = resume
 
         # set save_dir where trained models and log will be saved.
@@ -75,7 +78,7 @@ class ConfigParser:
 
         # parse custom cli options into dictionary
         modification = {
-            opt.target: getattr(args, _get_opt_name(opt.flags)) for opt in options
+            opt.target: getattr(args, get_opt_name(opt.flags)) for opt in options
         }
         return cls(config, resume, modification, run_id=args.exp_name, mkdir=mkdir)
 
@@ -138,32 +141,3 @@ class ConfigParser:
     @property
     def log_dir(self):
         return self._log_dir
-
-
-# helper functions to update config dict with custom cli options
-def _update_config(config, modification):
-    if modification is None:
-        return config
-
-    for k, v in modification.items():
-        if v is not None:
-            _set_by_path(config, k, v)
-    return config
-
-
-def _get_opt_name(flags):
-    for flg in flags:
-        if flg.startswith("--"):
-            return flg.replace("--", "")
-    return flags[0].replace("--", "")
-
-
-def _set_by_path(tree, keys, value):
-    """Set a value in a nested object in tree by sequence of keys."""
-    keys = keys.split(";")
-    _get_by_path(tree, keys[:-1])[keys[-1]] = value
-
-
-def _get_by_path(tree, keys):
-    """Access a nested object in tree by sequence of keys."""
-    return reduce(getitem, keys, tree)

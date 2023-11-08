@@ -22,7 +22,7 @@ from mvs_former.Method.fusion import (
     idx_img2cam,
     idx_cam2world,
 )
-from base.parse_config import ConfigParser
+from mvs_former.Data.config_parser import ConfigParser
 from mvs_former.Data.dict_average_meter import DictAverageMeter
 from mvs_former.Dataset.data_loaders import DTULoader
 from mvs_former.Dataset.tt import TTDataset
