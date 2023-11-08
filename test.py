@@ -1,27 +1,25 @@
 import argparse
-import cv2
 import gc
 import os
 import sys
 import time
-import numpy as np
 
-import torch.nn.parallel
-from PIL import Image
-from plyfile import PlyData, PlyElement
-from torch.utils.data import Dataset, DataLoader, SequentialSampler
-
+import cv2
 import datasets.data_loaders as module_data
 import misc.fusion as fusion
+import numpy as np
+import torch.nn.parallel
 from base.parse_config import ConfigParser
 from datasets.data_io import read_pfm, save_pfm
 from misc.gipuma import gipuma_filter
-
 from mvs_former.Data.dict_average_meter import DictAverageMeter
-from mvs_former.Model.mvsformer_model import TwinMVSNet, DINOMVSNet
-from mvs_former.Method.utils import print_args, tocuda, tensor2numpy, tensor2float
+from mvs_former.Method.utils import print_args, tensor2float, tensor2numpy, tocuda
 from mvs_former.Metric.abs_depth_error import AbsDepthError_metrics
 from mvs_former.Metric.thres import Thres_metrics
+from mvs_former.Model.mvsformer_model import DINOMVSNet, TwinMVSNet
+from PIL import Image
+from plyfile import PlyData, PlyElement
+from torch.utils.data import DataLoader, Dataset, SequentialSampler
 
 # cudnn.benchmark = True
 
