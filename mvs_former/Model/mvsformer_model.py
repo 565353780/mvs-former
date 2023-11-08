@@ -18,6 +18,7 @@ from mvs_former.Model.fpn.encoder import FPNEncoder
 from mvs_former.Model.fpn.decoder import FPNDecoder, FPNDecoderV2
 from mvs_former.Model.gvt import alt_gvt_base, alt_gvt_small, alt_gvt_large
 from mvs_former.Model import vision_transformer as vits
+from mvs_former.Method.utils import torch_init_model
 from mvs_former.Method.depth import (
     depth_regression,
     conf_regression,
@@ -233,7 +234,6 @@ class DINOMVSNet(nn.Module):
         )
         if os.path.exists(self.vit_args["vit_path"]):
             state_dict = torch.load(self.vit_args["vit_path"], map_location="cpu")
-            from utils import torch_init_model
 
             if (
                 self.vit_args["vit_path"].split("/")[-1] == "model_best.pth"
@@ -495,7 +495,6 @@ class TwinMVSNet(nn.Module):
 
         if os.path.exists(self.vit_args["vit_path"]):
             state_dict = torch.load(self.vit_args["vit_path"], map_location="cpu")
-            from utils import torch_init_model
 
             torch_init_model(self.vit, state_dict, key="none")
         else:

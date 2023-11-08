@@ -4,6 +4,7 @@ import gc
 import os
 import sys
 import time
+import numpy as np
 
 import torch.nn.parallel
 from PIL import Image
@@ -15,9 +16,12 @@ import misc.fusion as fusion
 from base.parse_config import ConfigParser
 from datasets.data_io import read_pfm, save_pfm
 from misc.gipuma import gipuma_filter
-from utils import *
 
+from mvs_former.Data.dict_average_meter import DictAverageMeter
 from mvs_former.Model.mvsformer_model import TwinMVSNet, DINOMVSNet
+from mvs_former.Method.utils import print_args, tocuda, tensor2numpy, tensor2float
+from mvs_former.Metric.abs_depth_error import AbsDepthError_metrics
+from mvs_former.Metric.thres import Thres_metrics
 
 # cudnn.benchmark = True
 
@@ -182,7 +186,7 @@ def read_mask(filename):
 
 # save a binary mask
 def save_mask(filename, mask):
-    assert mask.dtype == np.bool
+    assert mask.dtype == bool
     mask = mask.astype(np.uint8) * 255
     Image.fromarray(mask).save(filename)
 
@@ -193,7 +197,7 @@ def read_pair_file(filename):
     with open(filename) as f:
         num_viewpoint = int(f.readline())
         # 49 viewpoints
-        for view_idx in range(num_viewpoint):
+        for _ in range(num_viewpoint):
             ref_view = int(f.readline().rstrip())
             src_views = [int(x) for x in f.readline().rstrip().split()[1::2]]
             if len(src_views) > 0:
@@ -617,7 +621,7 @@ def filter_depth(pair_folder, scan_folder, out_folder, plyfilename):
         )
 
         points_np = points.cpu().data.numpy()
-        mask_np = mask.cpu().data.numpy().astype(np.bool)
+        mask_np = mask.cpu().data.numpy().astype(bool)
         # dir_vecs = dir_vecs.cpu().data.numpy()
         ref_img = sample_np["ref_img"].data.numpy()
         for i in range(points_np.shape[0]):
@@ -642,7 +646,7 @@ def filter_depth(pair_folder, scan_folder, out_folder, plyfilename):
 
     print("Write combined PCD")
     p_all, c_all = [
-        np.concatenate([v[k] for key, v in views.items()], axis=0) for k in range(2)
+        np.concatenate([v[k] for v in views.values()], axis=0) for k in range(2)
     ]
 
     vertexs = np.array(
@@ -679,7 +683,7 @@ def dynamic_filter_depth(pair_folder, scan_folder, out_folder, plyfilename):
     views = {}
     prob_threshold = args.prob_threshold
     prob_threshold = [float(p) for p in prob_threshold.split(",")]
-    for batch_idx, sample_np in enumerate(tt_dataloader):
+    for sample_np in tt_dataloader:
         num_src_views = sample_np["src_depths"].shape[1]
         dy_range = num_src_views + 1  # 10
         sample = tocuda(sample_np)
@@ -690,7 +694,6 @@ def dynamic_filter_depth(pair_folder, scan_folder, out_folder, plyfilename):
             prob_mask = fusion.prob_filter(sample["ref_conf"], prob_threshold)
 
         ref_depth = sample["ref_depth"]  # [n 1 h w ]
-        device = ref_depth.device
         reproj_xyd = fusion.get_reproj_dynamic(
             *[
                 sample[attr]
@@ -727,7 +730,7 @@ def dynamic_filter_depth(pair_folder, scan_folder, out_folder, plyfilename):
         )
 
         points_np = points.cpu().data.numpy()
-        mask_np = mask.cpu().data.numpy().astype(np.bool)
+        mask_np = mask.cpu().data.numpy().astype(bool)
 
         ref_img = sample_np["ref_img"].data.numpy()
         for i in range(points_np.shape[0]):
@@ -751,7 +754,7 @@ def dynamic_filter_depth(pair_folder, scan_folder, out_folder, plyfilename):
 
     print("Write combined PCD")
     p_all, c_all = [
-        np.concatenate([v[k] for key, v in views.items()], axis=0) for k in range(2)
+        np.concatenate([v[k] for v in views.values()], axis=0) for k in range(2)
     ]
 
     vertexs = np.array(
