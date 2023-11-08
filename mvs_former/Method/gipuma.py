@@ -1,6 +1,6 @@
 import os
 import shutil
-from struct import *
+from struct import unpack, pack
 
 import numpy as np
 from tqdm import tqdm

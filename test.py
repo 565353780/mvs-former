@@ -10,13 +10,24 @@ import torch.nn.parallel
 from plyfile import PlyData, PlyElement
 from torch.utils.data import DataLoader, SequentialSampler
 
-import misc.fusion as fusion
+from mvs_former.Method.fusion import (
+    prob_filter,
+    get_reproj,
+    get_reproj_dynamic,
+    vis_filter,
+    vis_filter_dynamic,
+    ave_fusion,
+    bin_op_reduce,
+    get_pixel_grids,
+    idx_img2cam,
+    idx_cam2world,
+)
 from base.parse_config import ConfigParser
-from misc.gipuma import gipuma_filter
 from mvs_former.Data.dict_average_meter import DictAverageMeter
 from mvs_former.Dataset.data_loaders import DTULoader
 from mvs_former.Dataset.tt import TTDataset
 from mvs_former.Method.data_io import save_pfm
+from mvs_former.Method.gipuma import gipuma_filter
 from mvs_former.Method.io import write_cam
 from mvs_former.Method.utils import print_args, tensor2float, tensor2numpy, tocuda
 from mvs_former.Metric.abs_depth_error import AbsDepthError_metrics
@@ -409,7 +420,7 @@ def filter_depth(pair_folder, scan_folder, out_folder, plyfilename):
             if args.combine_conf:
                 src_prob_mask = sample["src_confs"][:, ids] > prob_threshold[0]
             else:
-                src_prob_mask = fusion.prob_filter(
+                src_prob_mask = prob_filter(
                     sample["src_confs"][:, ids, ...], prob_threshold
                 )
             sample["src_depths"][:, ids, ...] *= src_prob_mask.float()
@@ -417,15 +428,15 @@ def filter_depth(pair_folder, scan_folder, out_folder, plyfilename):
         if args.combine_conf:
             prob_mask = sample["ref_conf"] > prob_threshold[0]
         else:
-            prob_mask = fusion.prob_filter(sample["ref_conf"], prob_threshold)
+            prob_mask = prob_filter(sample["ref_conf"], prob_threshold)
 
-        reproj_xyd, in_range = fusion.get_reproj(
+        reproj_xyd, in_range = get_reproj(
             *[
                 sample[attr]
                 for attr in ["ref_depth", "src_depths", "ref_cam", "src_cams"]
             ]
         )
-        vis_masks, vis_mask = fusion.vis_filter(
+        vis_masks, vis_mask = vis_filter(
             sample["ref_depth"],
             reproj_xyd,
             in_range,
@@ -434,13 +445,13 @@ def filter_depth(pair_folder, scan_folder, out_folder, plyfilename):
             args.thres_view,
         )
 
-        ref_depth_ave = fusion.ave_fusion(sample["ref_depth"], reproj_xyd, vis_masks)
+        ref_depth_ave = ave_fusion(sample["ref_depth"], reproj_xyd, vis_masks)
 
-        mask = fusion.bin_op_reduce([prob_mask, vis_mask], torch.min)
+        mask = bin_op_reduce([prob_mask, vis_mask], torch.min)
 
-        idx_img = fusion.get_pixel_grids(*ref_depth_ave.size()[-2:]).unsqueeze(0)
-        idx_cam = fusion.idx_img2cam(idx_img, ref_depth_ave, sample["ref_cam"])
-        points = fusion.idx_cam2world(idx_cam, sample["ref_cam"])[..., :3, 0].permute(
+        idx_img = get_pixel_grids(*ref_depth_ave.size()[-2:]).unsqueeze(0)
+        idx_cam = idx_img2cam(idx_img, ref_depth_ave, sample["ref_cam"])
+        points = idx_cam2world(idx_cam, sample["ref_cam"])[..., :3, 0].permute(
             0, 3, 1, 2
         )
 
@@ -515,10 +526,10 @@ def dynamic_filter_depth(pair_folder, scan_folder, out_folder, plyfilename):
         if args.combine_conf:
             prob_mask = sample["ref_conf"] > prob_threshold[0]
         else:
-            prob_mask = fusion.prob_filter(sample["ref_conf"], prob_threshold)
+            prob_mask = prob_filter(sample["ref_conf"], prob_threshold)
 
         ref_depth = sample["ref_depth"]  # [n 1 h w ]
-        reproj_xyd = fusion.get_reproj_dynamic(
+        reproj_xyd = get_reproj_dynamic(
             *[
                 sample[attr]
                 for attr in ["ref_depth", "src_depths", "ref_cam", "src_cams"]
@@ -527,7 +538,7 @@ def dynamic_filter_depth(pair_folder, scan_folder, out_folder, plyfilename):
         # reproj_xyd   nv 3 h w
 
         # 4 1300
-        vis_masks, vis_mask = fusion.vis_filter_dynamic(
+        vis_masks, vis_mask = vis_filter_dynamic(
             sample["ref_depth"],
             reproj_xyd,
             dist_base=args.dist_base,
@@ -546,10 +557,10 @@ def dynamic_filter_depth(pair_folder, scan_folder, out_folder, plyfilename):
         for i in range(2, dy_range):
             geo_mask = torch.logical_or(geo_mask, geo_mask_sums[:, i - 2] >= i)
 
-        mask = fusion.bin_op_reduce([prob_mask, geo_mask], torch.min)
-        idx_img = fusion.get_pixel_grids(*depth_est_averaged.size()[-2:]).unsqueeze(0)
-        idx_cam = fusion.idx_img2cam(idx_img, depth_est_averaged, sample["ref_cam"])
-        points = fusion.idx_cam2world(idx_cam, sample["ref_cam"])[..., :3, 0].permute(
+        mask = bin_op_reduce([prob_mask, geo_mask], torch.min)
+        idx_img = get_pixel_grids(*depth_est_averaged.size()[-2:]).unsqueeze(0)
+        idx_cam = idx_img2cam(idx_img, depth_est_averaged, sample["ref_cam"])
+        points = idx_cam2world(idx_cam, sample["ref_cam"])[..., :3, 0].permute(
             0, 3, 1, 2
         )
 
