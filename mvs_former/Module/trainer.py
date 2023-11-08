@@ -6,7 +6,9 @@ from base import BaseTrainer
 from tqdm import tqdm
 
 from utils import *
-from models.losses import *
+from mvs_former.Loss.ce import ce_loss_stage4, mixup_ce_loss_stage4
+from mvs_former.Loss.reg import reg_loss_stage4
+from mvs_former.Loss.wasserstein import wasserstein_loss
 
 
 class Trainer(BaseTrainer):

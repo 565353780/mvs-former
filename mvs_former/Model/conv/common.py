@@ -1,7 +1,4 @@
-import torch
 import torch.nn as nn
-
-autocast = torch.cuda.amp.autocast
 
 
 def init_bn(module):
