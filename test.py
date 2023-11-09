@@ -34,7 +34,10 @@ from mvs_former.Metric.abs_depth_error import AbsDepthError_metrics
 from mvs_former.Metric.thres import Thres_metrics
 from mvs_former.Model.mvsformer_model import DINOMVSNet, TwinMVSNet
 
-args = getParserArgs()
+parser = getParserArgs()
+# parse arguments and check
+args = parser.parse_args()
+
 print("argv:", sys.argv[1:])
 print_args(args)
 if args.testpath_single_scene:

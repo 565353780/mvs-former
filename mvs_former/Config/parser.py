@@ -128,6 +128,4 @@ def getParserArgs():
     parser.add_argument("--tmps", default=None, type=str)
     parser.add_argument("--save_all_confs", action="store_true")
 
-    # parse arguments and check
-    args = parser.parse_args()
-    return args
+    return parser
