@@ -130,6 +130,9 @@ class MVSDataset(Dataset):
 
         depth_interval *= interval_scale
 
+        if depth_interval == 0.0:
+            depth_interval = 2.5
+
         return intrinsics, extrinsics, depth_min, depth_interval
 
     def read_img(self, filename):

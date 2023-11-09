@@ -1,4 +1,4 @@
-CUDA_VISIBLE_DEVICES=0 python test.py \
+CUDA_VISIBLE_DEVICES=0 python demo.py \
 	--dataset dtu \
 	--batch_size 1 \
 	--testpath /home/chli/chLi/Dataset/MVSFormer/DTU/dtu_testing/dtu/ \
@@ -14,6 +14,6 @@ CUDA_VISIBLE_DEVICES=0 python test.py \
 	--filter_method gipuma \
 	--disp_threshold 0.1 \
 	--num_consistent 2 \
-	--prob_threshold 0.5,0.5,0.5,0.5 \
+	--prob_threshold 0.8,0.8,0.8,0.8 \
 	--combine_conf \
 	--tmps 5.0,5.0,5.0,1.0
