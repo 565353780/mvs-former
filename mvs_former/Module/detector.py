@@ -128,6 +128,43 @@ class Detector(object):
                     - sample_cuda["depth_values"][:, 0]
                 )
                 filenames = sample["filename"]
+
+                skip_iter = True
+                for filename in filenames:
+                    depth_filename = os.path.join(
+                        self.args.outdir, filename.format("depth_est", ".pfm")
+                    )
+                    if not os.path.exists(depth_filename):
+                        skip_iter = False
+                        break
+                    confidence_filename = os.path.join(
+                        self.args.outdir, filename.format("confidence", ".npy")
+                    )
+                    if not os.path.exists(confidence_filename):
+                        skip_iter = False
+                        break
+                    cam_filename = os.path.join(
+                        self.args.outdir, filename.format("cams", "_cam.txt")
+                    )
+                    if not os.path.exists(cam_filename):
+                        skip_iter = False
+                        break
+                    img_filename = os.path.join(
+                        self.args.outdir, filename.format("images", ".jpg")
+                    )
+                    if not os.path.exists(img_filename):
+                        skip_iter = False
+                        break
+
+                if skip_iter:
+                    print(
+                        "Iter {}/{}, found result, skipped!".format(
+                            batch_idx,
+                            len(test_data_loader),
+                        )
+                    )
+                    continue
+
                 # with torch.cuda.amp.autocast():
                 outputs = model.forward(
                     imgs, cam_params, sample_cuda["depth_values"], tmp=tmp
@@ -272,7 +309,10 @@ class Detector(object):
                             scalar_outputs = tensor2float(scalar_outputs)
                             valid_metrics.update(scalar_outputs)
 
-        print("average time: ", sum(times) / len(times))
+        if len(times) > 0:
+            print("average time: ", sum(times) / len(times))
+        else:
+            print("average time: 0")
         if self.args.dataset == "dtu":
             valid_metrics = valid_metrics.mean()
             with open(os.path.join(self.args.outdir, "depth_metric.txt"), "w") as w:
@@ -285,8 +325,9 @@ class Detector(object):
     def detect(self, data):
         return
 
-    def detectImageFolder(self, image_folder_path):
-        image_folder_name = image_folder_path.split("/")[-2]
+    def detectImageFolder(self, image_folder_path, run_name):
+        self.args.outdir += run_name
+        image_folder_name = "mvs"
         self.save_depth([image_folder_name])
 
         gipuma_filter(

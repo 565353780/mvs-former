@@ -1,7 +1,7 @@
 CUDA_VISIBLE_DEVICES=0 python demo.py \
 	--dataset dtu \
 	--batch_size 1 \
-	--testpath /home/chli/chLi/Dataset/MVSFormer/DTU/dtu_testing/dtu/ \
+	--testpath /home/chli/github/NeRF/colmap-manage/output/3vjia_simple/mvs/ \
 	--testlist ../mvs-former/mvs_former/Config/lists/dtu/test.txt \
 	--resume /home/chli/chLi/Model/MVSFormer/MVSFormer/MVSFormer/best.pth \
 	--outdir ../mvs-former/output/ \
@@ -14,6 +14,6 @@ CUDA_VISIBLE_DEVICES=0 python demo.py \
 	--filter_method gipuma \
 	--disp_threshold 0.1 \
 	--num_consistent 2 \
-	--prob_threshold 0.8,0.8,0.8,0.8 \
+	--prob_threshold 0.5,0.5,0.5,0.5 \
 	--combine_conf \
 	--tmps 5.0,5.0,5.0,1.0

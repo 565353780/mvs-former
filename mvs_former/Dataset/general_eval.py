@@ -52,7 +52,7 @@ class MVSDataset(Dataset):
 
     def build_list(self):
         metas = []  # {}
-        if type(self.listfile) is list:
+        if isinstance(self.listfile, list):
             scans = self.listfile
         else:
             with open(self.listfile, "r") as f:
@@ -73,7 +73,7 @@ class MVSDataset(Dataset):
             with open(os.path.join(self.datapath, pair_file)) as f:
                 num_viewpoint = int(f.readline())
                 # viewpoints
-                for view_idx in range(num_viewpoint):
+                for _ in range(num_viewpoint):
                     ref_view = int(f.readline().rstrip())
                     src_views = [int(x) for x in f.readline().rstrip().split()[1::2]]
 
