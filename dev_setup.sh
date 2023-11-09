@@ -1,4 +1,10 @@
-cd mvs_former/Lib/fusibile
+cd ..
+git clone git@github.com:565353780/colmap-manage.git
+
+cd colmap-manage
+./dev_setup.sh
+
+cd ../mvs-former/mvs_former/Lib/fusibile
 rm -rf build
 mkdir build
 cd build
