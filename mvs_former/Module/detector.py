@@ -6,6 +6,7 @@ import time
 import cv2
 import numpy as np
 import torch.nn.parallel
+from typing import Union
 
 from mvs_former.Config.parser import getParserArgs
 from mvs_former.Data.config_parser import ConfigParser
@@ -325,8 +326,9 @@ class Detector(object):
     def detect(self, data):
         return
 
-    def detectImageFolder(self, image_folder_path, run_name):
-        self.args.outdir += run_name
+    def detectImageFolder(self, image_folder_path, run_name: Union[str, None]=None):
+        if run_name is not None:
+            self.args.outdir += run_name
         image_folder_name = "mvs"
         self.save_depth([image_folder_name])
 
